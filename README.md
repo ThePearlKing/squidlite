@@ -4,6 +4,10 @@ A bioluminescent deep-sea **roguelite** built in [LÖVE](https://love2d.org) (Lu
 You are the last lit squid; the Maw has drunk the light from the ocean. Descend
 eight depths of the trench, ink the dark, and take back the sea.
 
+Squidlite is the spiritual successor to my previous roguelite shooter,
+**Claude: Mythos** — carrying forward its run-based combat and roguelite loop
+into the deep sea.
+
 > Requires LÖVE 11.x. Run from this folder with: `love .`
 
 ## Screenshots
