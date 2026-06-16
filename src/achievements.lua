@@ -29,6 +29,18 @@ A.list = {
     { id="terror_win",  name="Hell Survivor",  desc="Win a run on TERROR difficulty. Unlocks the Halo." },
     { id="no_lifesteal_win", name="No Crutch", desc="Win a run (not GOO-GOO BABY) without ever taking Lifesteal." },
     { id="churgly_slain", name="Godkiller",    desc="Slay the Churgly'nth in the fractalspace. Unlocks 3 cosmic relics." },
+
+    -- Extended catalog (also published to the games.brassey.io online portal).
+    { id="kills_5000", name="Abyssal Annihilator", desc="Defeat 5,000 creatures (lifetime)." },
+    { id="wins_50",    name="Trench Eternal",   desc="Win 50 runs." },
+    { id="combo_100",  name="Maelstrom",        desc="Reach a 100 combo." },
+    { id="rich_25000", name="Trench Croesus",   desc="Earn 25,000 $Things total." },
+    { id="bosses_50",  name="Worldender",       desc="Defeat 50 bosses (lifetime)." },
+    { id="playtime_5h", name="Tideworn",        desc="Play for 5 hours." },
+    { id="deaths_50",  name="Unsinkable",       desc="Die 50 times and keep diving." },
+    { id="mods_5",     name="Chaos Theory",     desc="Win with 5+ modifiers active." },
+    { id="flawless_terror", name="Immaculate",  desc="Win on TERROR without taking a single hit." },
+    { id="speedrun_6", name="Lightspeed Descent", desc="Win in under 6 minutes." },
 }
 
 A.byId = {}
@@ -36,9 +48,11 @@ for _, a in ipairs(A.list) do A.byId[a.id] = a end
 
 function A.isUnlocked(save, id) return save.achievements[id] == true end
 
--- Unlock one achievement. Returns true if it was newly unlocked. Grants any
--- special cosmetic gated by this achievement.
-function A.fire(save, id)
+-- Mark an achievement unlocked in the save and grant any special cosmetic it
+-- gates. Returns true only when it was NOT already unlocked. Does NOT report to
+-- the online portal — callers decide whether to (A.fire does; portal-sync does
+-- not, to avoid echoing a portal-sourced unlock straight back).
+local function grant(save, id)
     if save.achievements[id] then return false end
     if not A.byId[id] then return false end
     save.achievements[id] = true
@@ -49,6 +63,39 @@ function A.fire(save, id)
         if item.ach == id then save.owned[item.id] = true end
     end
     return true
+end
+
+-- Report an unlock to the games.brassey.io online build. The LÖVE-web runtime
+-- watches stdout for the "[[LOVEWEB_ACH]]" prefix and records the unlock
+-- server-side (keys must match achievements.json at the repo root). On the
+-- desktop build this is just an inert stdout line.
+function A.report(id)
+    if A.byId[id] then print("[[LOVEWEB_ACH]]unlock " .. id) end
+end
+
+-- Unlock one achievement. Returns true if it was newly unlocked. Grants any
+-- special cosmetic gated by this achievement, and reports it to the portal.
+function A.fire(save, id)
+    if not grant(save, id) then return false end
+    A.report(id)
+    return true
+end
+
+-- On the web build the portal pre-populates <save-dir>/__loveweb__/achievements.json
+-- with the player's already-earned unlocks before main.lua runs. Fold those into
+-- the local save so the in-game achievements screen and cosmetic unlocks reflect
+-- online progress. No-op on desktop (file absent). We mark locally only — never
+-- re-report, or we'd bounce portal unlocks back at the portal. No JSON lib is
+-- bundled, so we pluck the unlock keys with a pattern match.
+function A.syncFromPortal(save)
+    local path = "__loveweb__/achievements.json"
+    if not (love and love.filesystem and love.filesystem.getInfo
+            and love.filesystem.getInfo(path)) then return end
+    local raw = love.filesystem.read(path)
+    if not raw then return end
+    for key in raw:gmatch('"key"%s*:%s*"([a-z0-9_]+)"') do
+        grant(save, key)
+    end
 end
 
 -- Scan lifetime stats and fire any threshold achievements now satisfied.
@@ -78,6 +125,15 @@ function A.check(save)
     try(s.bossKills >= 8,     "bosses_8")
     try(s.bossKills >= 25,    "bosses_25")
     try(s.maxMods >= 3,       "mods_3")
+    -- Extended catalog
+    try(s.totalKills >= 5000,        "kills_5000")
+    try(s.totalWins >= 50,           "wins_50")
+    try(s.bestCombo >= 100,          "combo_100")
+    try(s.totalThingsEarned >= 25000, "rich_25000")
+    try(s.bossKills >= 50,           "bosses_50")
+    try((s.playTime or 0) >= 18000,  "playtime_5h")  -- 5 hours
+    try((s.deaths or 0) >= 50,       "deaths_50")
+    try(s.maxMods >= 5,              "mods_5")
     return newly
 end
 

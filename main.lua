@@ -259,7 +259,9 @@ function App.finishRun(result)
         if result.flawless then s.noHitWins = s.noHitWins + 1 end
         if result.pointMult < 1 then s.curseWins = s.curseWins + 1 end
         if result.time and result.time < 540 then App.fireAchievement("speedrun") end
+        if result.time and result.time < 360 then App.fireAchievement("speedrun_6") end
         if result.difficulty == "terror" then App.fireAchievement("terror_win") end
+        if result.flawless and result.difficulty == "terror" then App.fireAchievement("flawless_terror") end
         if not result.usedLifesteal then App.fireAchievement("no_lifesteal_win") end
     elseif not result.won then
         s.deaths = s.deaths + 1
@@ -292,6 +294,8 @@ function love.load()
     end
     if devMode then Save.useTestFile() end
     App.save = Save.load()
+    -- Web build: fold in any unlocks the games.brassey.io portal pre-populated.
+    require("src.achievements").syncFromPortal(App.save)
     Audio.init(App.save)
     if App.save.settings.fullscreen then
         love.window.setFullscreen(true, "desktop")
