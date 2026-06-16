@@ -46,11 +46,8 @@ depths lie between your ink and the thing that ate the light.
 | Fullscreen | `F11` |
 | Debug console (FPS + logs) | `F9` |
 
-Ink is **both your ammo and your dash fuel** — shooting and dashing drain the ink
-meter, which slowly refills. Managing ink is the core tension.
-
 ## What's in it
-- **Unique squid combat** — momentum jet movement, ink-economy shooting, a dash
+- **Unique squid combat** — momentum jet movement, ink shooting, a dash
   that can leave damaging ink clouds. Dodge bullet-hell from bosses.
 - **8 depths, 8 unique enemies** (Drifter, Darter, Snapper, Spitter, Lurker,
   Gulper, Puffer, Wisp), each with its own AI, plus stronger **Abyssal variants**
