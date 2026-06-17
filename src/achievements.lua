@@ -27,7 +27,7 @@ A.list = {
     { id="bosses_25",   name="Titanbane",      desc="Defeat 25 bosses (lifetime). Unlocks the Specter skin." },
     { id="mods_3",      name="Thrill Seeker",  desc="Win with 3+ modifiers active. Unlocks War Paint." },
     { id="terror_win",  name="Hell Survivor",  desc="Win a run on TERROR difficulty. Unlocks the Halo." },
-    { id="no_lifesteal_win", name="No Crutch", desc="Win a run (not GOO-GOO BABY) without ever taking Lifesteal." },
+    { id="no_lifesteal_win", name="No Crutch", desc="Win a run without ever taking Lifesteal." },
     { id="churgly_slain", name="Godkiller",    desc="Slay the Churgly'nth in the fractalspace. Unlocks 3 cosmic relics." },
 
     -- Extended catalog (also published to the games.brassey.io online portal).
