@@ -689,6 +689,15 @@ end
 
 function love.resize() updateScale() end
 
+-- Web build: when the browser tab / iframe loses focus, pause an in-progress
+-- run so it never simulates in the background. Direct-set (not a toggle) so
+-- regaining focus never silently un-pauses the player.
+function love.focus(focused)
+    if not focused and App.state == "playing" and App.game then
+        App.game.paused = true
+    end
+end
+
 function love.update(dt)
     App.mx, App.my = toLogical(love.mouse.getPosition())
     App.save.stats.playTime = (App.save.stats.playTime or 0) + dt
