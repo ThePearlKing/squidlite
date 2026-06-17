@@ -148,6 +148,20 @@ end
 function UI:update(dt, mx, my)
     self.t = self.t + dt
     self.mx, self.my = mx, my
+    -- Drag-to-scroll: move the list with the cursor while the button is held.
+    if self.scrollDrag then
+        if love.mouse.isDown(1) then
+            local d = my - self.scrollDrag.lastY
+            self.scrollDrag.lastY = my
+            if math.abs(my - self.scrollDrag.startY) > 5 then self.scrollDrag.moved = true end
+            local s = (self.scroll[self.screen] or 0) - d
+            if s < 0 then s = 0 end
+            if self.maxScroll then s = math.min(s, self.maxScroll) end
+            self.scroll[self.screen] = s
+        else
+            self.scrollDrag = nil   -- release was missed (e.g. left the window)
+        end
+    end
     -- held-backspace repeat for text fields: one delete on press (handled in
     -- keypressed), then after a short delay it auto-repeats like a real keyboard.
     if (self.editField or self.numEdit or self.resetStage == "type") and love.keyboard.isDown("backspace") then
@@ -410,6 +424,23 @@ function UI:mousepressed(mx, my, button)
         return
     end
     if button ~= 1 then return end
+    -- Drag-to-scroll: if the press lands inside a scrollable item grid, start a
+    -- drag instead of selecting immediately. The grid card's click is deferred
+    -- to release and only fires if the press didn't turn into a drag (a tap).
+    local g = self.gridRegion
+    if g and g.screen == self.screen and (g.max or 0) > 0
+            and U.inRect(mx, my, g.x, g.y, g.w, g.h) then
+        self.scrollDrag = { startY = my, lastY = my,
+                            startScroll = self.scroll[self.screen] or 0, moved = false }
+        return
+    end
+    self:clickAt(mx, my)
+end
+
+-- Fire the top-most enabled hot region under (mx, my). Shared by press-to-click
+-- and the tap branch of drag-to-scroll release.
+function UI:clickAt(mx, my)
+    local start = self.modalStart or 1
     for i = #self.hot, start, -1 do
         local b = self.hot[i]
         if not b.disabled and U.inRect(mx, my, b.x, b.y, b.w, b.h) then
@@ -420,9 +451,21 @@ function UI:mousepressed(mx, my, button)
     end
 end
 
-function UI:mousereleased() self.dragSlider = nil end
+function UI:mousereleased()
+    self.dragSlider = nil
+    -- End a grid drag. If the finger never moved past the threshold it was a
+    -- tap, so dispatch the click now (selection was deferred from press).
+    if self.scrollDrag then
+        if not self.scrollDrag.moved then self:clickAt(self.mx, self.my) end
+        self.scrollDrag = nil
+    end
+end
 
 function UI:wheelmoved(_, dy)
+    -- Normalize the wheel delta. Desktop LÖVE reports ±1 per notch, but love.js
+    -- on the web portal reports large pixel deltas, so one wheel event would
+    -- jump the whole list to the top/bottom. Clamp the magnitude to a sane step.
+    if dy > 0 then dy = math.min(dy, 4) elseif dy < 0 then dy = math.max(dy, -4) end
     -- the starting-cards picker scrolls its own list while open
     if self.cardPickerOpen then
         self.cardScroll = math.max(0, math.min((self.cardScroll or 0) - dy * 52, self.cardScrollMax or 0))
@@ -943,6 +986,8 @@ function UI:drawItemGrid(items, rx, ry, rw, rh, isSkin, mode)
     self.maxScroll = math.max(0, content - rh)
     local sc = math.min(self.scroll[self.screen] or 0, self.maxScroll)
     self.scroll[self.screen] = sc
+    -- expose this grid's bounds so mousepressed can start a drag-to-scroll here
+    self.gridRegion = { x = rx, y = ry, w = rw, h = rh, screen = self.screen, max = self.maxScroll }
 
     love.graphics.setScissor(self.app.offX + rx * self.app.scale, self.app.offY + ry * self.app.scale,
         rw * self.app.scale, rh * self.app.scale)
@@ -1137,6 +1182,8 @@ function UI:screen_achievements()
     self.maxScroll = math.max(0, content - rh)
     local sc = math.min(self.scroll[self.screen] or 0, self.maxScroll)
     self.scroll[self.screen] = sc
+    -- expose this grid's bounds so mousepressed can start a drag-to-scroll here
+    self.gridRegion = { x = rx, y = ry, w = rw, h = rh, screen = self.screen, max = self.maxScroll }
 
     love.graphics.setScissor(self.app.offX + rx * self.app.scale, self.app.offY + ry * self.app.scale,
         rw * self.app.scale, rh * self.app.scale)
