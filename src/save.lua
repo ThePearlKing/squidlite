@@ -120,7 +120,10 @@ function Save.load()
     if love.filesystem.getInfo(PATH) then
         local content = love.filesystem.read(PATH)
         if content then
-            local chunk = load("return " .. content)
+            -- loadstring on Lua 5.1 (the love.js web runtime); load() only takes
+            -- a string on 5.2+. Desktop LÖVE is LuaJIT so plain load() worked
+            -- there, but the web portal is Lua 5.1 and needs this.
+            local chunk = (loadstring or load)("return " .. content)
             if chunk then
                 local ok, t = pcall(chunk)
                 if ok and type(t) == "table" then
